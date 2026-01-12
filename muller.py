@@ -1,8 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sol_ecuaciones_var as sol
+from tkinter.scrolledtext import ScrolledText
+from ui_components import build_param_grid
+from ui_base import HoverButtonsMixin
 
-class MullerWindow:
+class MullerWindow(HoverButtonsMixin):
     def __init__(self, parent):
         self.parent = parent
         self.parent.title("Método de Müller")
@@ -82,104 +85,29 @@ class MullerWindow:
         self.func_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.func_entry.insert(0, "x**3 - 2*x - 5")
         
-        # Parámetros en línea
+        # Parámetros (grid consistente)
         params_frame = tk.Frame(input_frame, bg=self.bg_color)
         params_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
-        
-        # x0
-        tk.Label(
-            params_frame,
-            text="x₀:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=0, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.x0_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=12,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.x0_entry.grid(row=0, column=1, padx=(0, 15), pady=5, sticky=tk.W)
-        self.x0_entry.insert(0, "1")
-        
-        # x1
-        tk.Label(
-            params_frame,
-            text="x₁:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=2, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.x1_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=12,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.x1_entry.grid(row=0, column=3, padx=(0, 15), pady=5, sticky=tk.W)
-        self.x1_entry.insert(0, "2")
-        
-        # x2
-        tk.Label(
-            params_frame,
-            text="x₂:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=4, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.x2_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=12,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.x2_entry.grid(row=0, column=5, padx=(0, 15), pady=5, sticky=tk.W)
-        self.x2_entry.insert(0, "3")
-        
-        # Error
-        tk.Label(
-            params_frame,
-            text="Error máximo:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=6, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.error_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=12,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.error_entry.grid(row=0, column=7, padx=(0, 15), pady=5, sticky=tk.W)
-        self.error_entry.insert(0, "0.0001")
-        
-        # Iteraciones
-        tk.Label(
-            params_frame,
-            text="Iteraciones:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=8, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.iter_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=12,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.iter_entry.grid(row=0, column=9, padx=(0, 0), pady=5, sticky=tk.W)
-        self.iter_entry.insert(0, "100")
+
+        fields = [
+            {"key": "x0", "label": "x₀:", "default": "1"},
+            {"key": "x1", "label": "x₁:", "default": "2"},
+            {"key": "x2", "label": "x₂:", "default": "3"},
+            {"key": "error", "label": "Error máximo:", "default": "0.0001"},
+            {"key": "iter", "label": "Iteraciones:", "default": "100"},
+        ]
+
+        entries = build_param_grid(params_frame, fields, max_fields_per_row=2)
+
+        self.x0_entry = entries["x0"]
+        self.x1_entry = entries["x1"]
+        self.x2_entry = entries["x2"]
+        self.error_entry = entries["error"]
+        self.iter_entry = entries["iter"]
+
+        for e in [self.x0_entry, self.x1_entry, self.x2_entry, self.error_entry, self.iter_entry]:
+            e.config(font=("Arial", 11), bg=self.entry_bg)
+
         
         # Frame de resultado
         result_frame = tk.LabelFrame(
@@ -312,32 +240,45 @@ class MullerWindow:
         # Empaquetar
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0), pady=5)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
+        
+        proc_frame = tk.LabelFrame(
+            main_frame,
+            text=" Procedimiento ",
+            font=("Arial", 12, "bold"),
+            bg=self.bg_color,
+            fg="#34495e",
+            relief=tk.GROOVE,
+            bd=2
+        )
+        proc_frame.pack(fill=tk.BOTH, expand=False, pady=(10, 0))
+
+        self.proc_text = ScrolledText(proc_frame, height=10, font=("Consolas", 10), wrap="none")
+        self.proc_text.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        self.proc_text.insert("1.0", "Aquí aparecerán los pasos del método.\n")
+        self.proc_text.config(state="disabled")
     
     def setup_events(self):
-        """Configurar eventos"""
-        # Efecto hover para botones
-        for btn in [self.calc_btn, self.clear_btn, self.exit_btn]:
-            btn.bind("<Enter>", lambda e, b=btn: self.on_enter(e, b))
-            btn.bind("<Leave>", lambda e, b=btn: self.on_leave(e, b))
+        self.bind_hover_buttons([self.calc_btn], normal_bg=self.btn_color, hover_bg=self.btn_hover)
+
+        self.clear_btn.bind("<Enter>", lambda e: self.clear_btn.config(bg="#7f8c8d"))
+        self.clear_btn.bind("<Leave>", lambda e: self.clear_btn.config(bg="#95a5a6"))
+
+        # En Müller tu exit normal es #34495e y hover #2c3e50
+        self.exit_btn.bind("<Enter>", lambda e: self.exit_btn.config(bg="#2c3e50"))
+        self.exit_btn.bind("<Leave>", lambda e: self.exit_btn.config(bg="#34495e"))
     
-    def on_enter(self, event, button):
-        """Efecto hover al entrar"""
-        if button == self.calc_btn:
-            button.config(bg=self.btn_hover)
-        elif button == self.clear_btn:
-            button.config(bg="#7f8c8d")
-        elif button == self.exit_btn:
-            button.config(bg="#2c3e50")
-    
-    def on_leave(self, event, button):
-        """Efecto hover al salir"""
-        if button == self.calc_btn:
-            button.config(bg=self.btn_color)
-        elif button == self.clear_btn:
-           button.config(bg="#95a5a6")
-        elif button == self.exit_btn:
-            button.config(bg="#34495e")
-    
+    def render_procedimiento_muller(self, resultados):
+        lines = []
+        lines.append("iter | x0 | x1 | x2 | x3 | error")
+        lines.append("-" * 70)
+        for r in resultados:
+            lines.append(
+                f"{r['iteracion']:>4} | "
+                f"{r['x0']:.8f} | {r['x1']:.8f} | {r['x2']:.8f} | "
+                f"{r['x3']:.8f} | {r['error']:.3e}"
+            )
+        return "\n".join(lines)
+
     def calcular(self):
         """Ejecutar método de Müller"""
         try:
@@ -387,6 +328,12 @@ class MullerWindow:
                     f"{res['x3']:.6f}",
                     f"{res['error']:.6e}"
                 ))
+
+            texto = self.render_procedimiento_muller(resultados)
+            self.proc_text.config(state="normal")
+            self.proc_text.delete("1.0", "end")
+            self.proc_text.insert("1.0", texto)
+            self.proc_text.config(state="disabled")
             
             # Mostrar mensaje de éxito
             messagebox.showinfo(

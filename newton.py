@@ -1,8 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from tkinter.scrolledtext import ScrolledText
+from ui_components import build_param_grid
+from ui_base import HoverButtonsMixin
 import sol_ecuaciones_var as sol
 
-class NewtonWindow:
+class NewtonWindow(HoverButtonsMixin):
     def __init__(self, parent):
         self.parent = parent
         self.parent.title("Método de Newton-Raphson")
@@ -82,66 +85,24 @@ class NewtonWindow:
         self.func_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.func_entry.insert(0, "x**3 - 2*x - 5")
         
-        # Parámetros en línea
+        # Parámetros (grid consistente)
         params_frame = tk.Frame(input_frame, bg=self.bg_color)
         params_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
-        
-        # x0
-        tk.Label(
-            params_frame,
-            text="Valor inicial x₀:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=0, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.x0_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=15,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.x0_entry.grid(row=0, column=1, padx=(0, 20), pady=5, sticky=tk.W)
-        self.x0_entry.insert(0, "2")
-        
-        # Error
-        tk.Label(
-            params_frame,
-            text="Error máximo:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=2, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.error_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=15,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.error_entry.grid(row=0, column=3, padx=(0, 20), pady=5, sticky=tk.W)
-        self.error_entry.insert(0, "0.0001")
-        
-        # Iteraciones
-        tk.Label(
-            params_frame,
-            text="Iteraciones:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=4, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.iter_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=15,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.iter_entry.grid(row=0, column=5, padx=(0, 0), pady=5, sticky=tk.W)
-        self.iter_entry.insert(0, "100")
+
+        fields = [
+            {"key": "x0", "label": "Valor inicial x₀:", "default": "1"},
+            {"key": "error", "label": "Error máximo:", "default": "1e-6"},
+            {"key": "iter", "label": "Iteraciones:", "default": "100"},
+        ]
+
+        entries = build_param_grid(params_frame, fields, max_fields_per_row=2)
+
+        self.x0_entry = entries["x0"]
+        self.error_entry = entries["error"]
+        self.iter_entry = entries["iter"]
+
+        for e in [self.x0_entry, self.error_entry, self.iter_entry]:
+            e.config(font=("Arial", 11), bg=self.entry_bg)
         
         # Frame de resultado
         result_frame = tk.LabelFrame(
@@ -274,32 +235,43 @@ class NewtonWindow:
         # Empaquetar
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0), pady=5)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
-    
+        
+        # Frame para procedimiento (opcional)
+        proc_frame = tk.LabelFrame(
+            main_frame,
+            text=" Procedimiento ",
+            font=("Arial", 12, "bold"),
+            bg=self.bg_color,
+            fg="#34495e",
+            relief=tk.GROOVE,
+            bd=2
+        )
+        proc_frame.pack(fill=tk.BOTH, expand=False, pady=(10, 0))
+
+        self.proc_text = ScrolledText(
+            proc_frame,
+            height=10,
+            font=("Consolas", 10),
+            wrap="none"
+        )
+        self.proc_text.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        self.proc_text.insert("1.0", "Aquí aparecerán los pasos del método.\n")
+        self.proc_text.config(state="disabled")
+
     def setup_events(self):
         """Configurar eventos"""
-        # Efecto hover para botones
-        for btn in [self.calc_btn, self.clear_btn, self.exit_btn]:
-            btn.bind("<Enter>", lambda e, b=btn: self.on_enter(e, b))
-            btn.bind("<Leave>", lambda e, b=btn: self.on_leave(e, b))
-    
-    def on_enter(self, event, button):
-        """Efecto hover al entrar"""
-        if button == self.calc_btn:
-            button.config(bg=self.btn_hover)
-        elif button == self.clear_btn:
-            button.config(bg="#7f8c8d")
-        elif button == self.exit_btn:
-            button.config(bg="#c0392b")
-    
-    def on_leave(self, event, button):
-        """Efecto hover al salir"""
-        if button == self.calc_btn:
-            button.config(bg=self.btn_color)
-        elif button == self.clear_btn:
-            button.config(bg="#95a5a6")
-        elif button == self.exit_btn:
-            button.config(bg="#e74c3c")
-    
+        self.bind_hover_buttons(
+            [self.calc_btn],
+            normal_bg=self.btn_color,
+            hover_bg=self.btn_hover
+        )
+
+        self.clear_btn.bind("<Enter>", lambda e: self.clear_btn.config(bg="#7f8c8d"))
+        self.clear_btn.bind("<Leave>", lambda e: self.clear_btn.config(bg="#95a5a6"))
+
+        self.exit_btn.bind("<Enter>", lambda e: self.exit_btn.config(bg="#c0392b"))
+        self.exit_btn.bind("<Leave>", lambda e: self.exit_btn.config(bg="#e74c3c"))
+
     def calcular(self):
         """Ejecutar método de Newton-Raphson"""
         try:
@@ -335,7 +307,7 @@ class NewtonWindow:
             
             # Llenar tabla
             for res in resultados:
-                derivada = res["f'(x)"]
+                derivada = res["df"]
                 
                 self.tree.insert('', tk.END, values=(
                     res['iteracion'],
@@ -345,6 +317,13 @@ class NewtonWindow:
                     f"{res['x_new']:.6f}",
                     f"{res['error']:.6e}"
                 ))
+                
+            texto = self.render_procedimiento_newton(resultados)
+            self.proc_text.config(state="normal")
+            self.proc_text.delete("1.0", "end")
+            self.proc_text.insert("1.0", texto)
+            self.proc_text.config(state="disabled")
+
             
             # Mostrar mensaje de éxito
             messagebox.showinfo(
@@ -358,6 +337,20 @@ class NewtonWindow:
             messagebox.showerror("Error", str(e))
         except Exception as e:
             messagebox.showerror("Error", f"Error inesperado: {str(e)}")
+    
+    def render_procedimiento_newton(self, resultados):
+        lines = []
+        lines.append("iter | x | f(x) | f'(x) | x_new | error")
+        lines.append("-" * 90)
+        for r in resultados:
+            # OJO: ajusta las keys si tu solver usa nombres distintos
+            lines.append(
+                f"{r['iteracion']:>4} | "
+                f"{r['x']:.10f} | {r['f(x)']:.3e} | {r['df']:.3e} | "
+                f"{r['x_new']:.10f} | {r['error']:.3e}"
+            )
+        return "\n".join(lines)
+
     
     def limpiar(self):
         """Limpiar todos los campos"""

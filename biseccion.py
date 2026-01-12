@@ -1,8 +1,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from tkinter.scrolledtext import ScrolledText
+from ui_components import build_param_grid
+from ui_base import HoverButtonsMixin
 import sol_ecuaciones_var as sol
 
-class BiseccionWindow:
+class BiseccionWindow(HoverButtonsMixin):
     def __init__(self, parent):
         self.parent = parent
         self.parent.title("Método de Bisección")
@@ -85,82 +88,23 @@ class BiseccionWindow:
         # Parámetros en línea
         params_frame = tk.Frame(input_frame, bg=self.bg_color)
         params_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
-        
-        # a
-        tk.Label(
-            params_frame,
-            text="a:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=0, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.a_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=15,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.a_entry.grid(row=0, column=1, padx=(0, 20), pady=5, sticky=tk.W)
-        self.a_entry.insert(0, "0")
-        
-        # b
-        tk.Label(
-            params_frame,
-            text="b:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=2, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.b_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=15,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.b_entry.grid(row=0, column=3, padx=(0, 20), pady=5, sticky=tk.W)
-        self.b_entry.insert(0, "4")
-        
-        # Error
-        tk.Label(
-            params_frame,
-            text="Error máximo:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=4, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.error_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=15,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.error_entry.grid(row=0, column=5, padx=(0, 20), pady=5, sticky=tk.W)
-        self.error_entry.insert(0, "0.0001")
-        
-        # Iteraciones
-        tk.Label(
-            params_frame,
-            text="Iteraciones:",
-            font=("Arial", 11),
-            bg=self.bg_color
-        ).grid(row=0, column=6, padx=(0, 5), pady=5, sticky=tk.W)
-        
-        self.iter_entry = tk.Entry(
-            params_frame,
-            font=("Arial", 11),
-            width=15,
-            bg=self.entry_bg,
-            relief=tk.SOLID,
-            bd=1
-        )
-        self.iter_entry.grid(row=0, column=7, padx=(0, 0), pady=5, sticky=tk.W)
-        self.iter_entry.insert(0, "100")
+
+        fields = [
+            {"key": "a", "label": "a:", "default": "0"},
+            {"key": "b", "label": "b:", "default": "4"},
+            {"key": "error", "label": "Error máximo:", "default": "0.0001"},
+            {"key": "iter", "label": "Iteraciones:", "default": "100"},
+        ]
+
+        entries = build_param_grid(params_frame, fields, max_fields_per_row=2)
+
+        self.a_entry = entries["a"]
+        self.b_entry = entries["b"]
+        self.error_entry = entries["error"]
+        self.iter_entry = entries["iter"]
+
+        for e in [self.a_entry, self.b_entry, self.error_entry, self.iter_entry]:
+            e.config(font=("Arial", 11), bg=self.entry_bg)
         
         # Frame de resultado
         result_frame = tk.LabelFrame(
@@ -297,31 +241,57 @@ class BiseccionWindow:
         # Empaquetar
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0), pady=5)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=5)
-    
+        
+        # Frame para procedimiento (opcional)
+        proc_frame = tk.LabelFrame(
+            main_frame,
+            text=" Procedimiento ",
+            font=("Arial", 12, "bold"),
+            bg=self.bg_color,
+            fg="#34495e",
+            relief=tk.GROOVE,
+            bd=2
+        )
+        proc_frame.pack(fill=tk.BOTH, expand=False, pady=(10, 0))
+
+        self.proc_text = ScrolledText(
+            proc_frame,
+            height=10,
+            font=("Consolas", 10),
+            wrap="none"
+        )
+        self.proc_text.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        self.proc_text.insert("1.0", "Aquí aparecerán los pasos del método.\n")
+        self.proc_text.config(state="disabled")
+
     def setup_events(self):
         """Configurar eventos"""
-        # Efecto hover para botones
-        for btn in [self.calc_btn, self.clear_btn, self.exit_btn]:
-            btn.bind("<Enter>", lambda e, b=btn: self.on_enter(e, b))
-            btn.bind("<Leave>", lambda e, b=btn: self.on_leave(e, b))
-    
-    def on_enter(self, event, button):
-        """Efecto hover al entrar"""
-        if button == self.calc_btn:
-            button.config(bg=self.btn_hover)
-        elif button == self.clear_btn:
-            button.config(bg="#7f8c8d")
-        elif button == self.exit_btn:
-            button.config(bg="#c0392b")
-    
-    def on_leave(self, event, button):
-        """Efecto hover al salir"""
-        if button == self.calc_btn:
-            button.config(bg=self.btn_color)
-        elif button == self.clear_btn:
-            button.config(bg="#95a5a6")
-        elif button == self.exit_btn:
-            button.config(bg="#e74c3c")
+        self.bind_hover_buttons(
+            [self.calc_btn],
+            normal_bg=self.btn_color,
+            hover_bg=self.btn_hover
+        )
+
+        self.clear_btn.bind("<Enter>", lambda e: self.clear_btn.config(bg="#7f8c8d"))
+        self.clear_btn.bind("<Leave>", lambda e: self.clear_btn.config(bg="#95a5a6"))
+
+        self.exit_btn.bind("<Enter>", lambda e: self.exit_btn.config(bg="#c0392b"))
+        self.exit_btn.bind("<Leave>", lambda e: self.exit_btn.config(bg="#e74c3c"))
+
+
+    def render_procedimiento_biseccion(self, resultados):
+        lines = []
+        lines.append("iter | a | c | b | f(a) | f(c) | f(b) | error")
+        lines.append("-" * 95)
+        for r in resultados:
+            lines.append(
+                f"{r['iteracion']:>4} | "
+                f"{r['a']:.8f} | {r['c']:.8f} | {r['b']:.8f} | "
+                f"{r['f(a)']:.3e} | {r['f(c)']:.3e} | {r['f(b)']:.3e} | "
+                f"{r['error']:.3e}"
+            )
+        return "\n".join(lines)
+
     
     def calcular(self):
         """Ejecutar método de bisección"""
@@ -375,6 +345,13 @@ class BiseccionWindow:
                     f"{res['error']:.6e}"
                 ))
             
+            # Procedimiento
+            texto = self.render_procedimiento_biseccion(resultados)
+            self.proc_text.config(state="normal")
+            self.proc_text.delete("1.0", "end")
+            self.proc_text.insert("1.0", texto)
+            self.proc_text.config(state="disabled")
+
             # Mostrar mensaje de éxito
             messagebox.showinfo(
                 "Éxito",

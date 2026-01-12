@@ -198,7 +198,7 @@ class SolEcuaciones:
                 'iteracion': i + 1,
                 'x': x,
                 'f(x)': fx,
-                "f'(x)": dfx,
+                "df": dfx,
                 'x_new': x_new,
                 'error': abs(x_new - x)
             })
