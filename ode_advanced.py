@@ -2,7 +2,7 @@
 Métodos Numéricos para EDOs - Parte 2
 ESCOM - IPN
 
-Incluye: RKF45 (adaptativo), Adams-Bashforth, Adams-Moulton
+Incluye: RKF45 (adaptativo), Adams-Bashforth
 """
 
 import numpy as np
@@ -156,64 +156,8 @@ class ODEAdvancedMethods:
         self._add_results_table(t_vals, y_vals)
         return np.array(t_vals), np.array(y_vals), self.steps
     
-    def adams_moulton(self, f: Callable, t0: float, y0: float,
-                      t_end: float, h: float) -> Tuple[np.ndarray, np.ndarray, List[str]]:
-        """
-        Adams-Moulton orden 3 (Predictor-Corrector).
-        
-        Predictor (AB4): w* = w_λ + (h/24)[55f_λ - 59f_{λ-1} + 37f_{λ-2} - 9f_{λ-3}]
-        Corrector (AM3): w = w_λ + (h/24)[9f(t_{λ+1},w*) + 19f_λ - 5f_{λ-1} + f_{λ-2}]
-        """
-        self.steps = []
-        self.steps.append("=" * 60)
-        self.steps.append("ADAMS-MOULTON (Predictor-Corrector)")
-        self.steps.append("=" * 60)
-        self.steps.append("Predictor (AB4): w* = w + (h/24)[55f - 59f₋₁ + 37f₋₂ - 9f₋₃]")
-        self.steps.append("Corrector (AM3): w = w + (h/24)[9f(t*,w*) + 19f - 5f₋₁ + f₋₂]")
-        self.steps.append(f"\nCondiciones: t₀={t0}, y₀={y0}, h={h}")
-        
-        # Inicializar con RK4
-        self.steps.append("\n--- Inicialización con RK4 ---")
-        t_vals, y_vals = [t0], [y0]
-        f_vals = [f(t0, y0)]
-        t, y = t0, y0
-        
-        for i in range(3):
-            K1 = f(t, y)
-            K2 = f(t + h/2, y + (h/2) * K1)
-            K3 = f(t + h/2, y + (h/2) * K2)
-            K4 = f(t + h, y + h * K3)
-            y = y + (h/6) * (K1 + 2*K2 + 2*K3 + K4)
-            t = t + h
-            t_vals.append(t)
-            y_vals.append(y)
-            f_vals.append(f(t, y))
-            self.steps.append(f"  RK4: t_{i+1}={t:.6f}, w_{i+1}={y:.6f}")
-        
-        # Predictor-Corrector
-        self.steps.append("\n--- Predictor-Corrector ---")
-        n = 3
-        while t < t_end - 1e-10:
-            t_new = t + h
-            
-            # Predictor (AB4)
-            w_pred = y_vals[-1] + (h/24) * (
-                55 * f_vals[-1] - 59 * f_vals[-2] + 37 * f_vals[-3] - 9 * f_vals[-4]
-            )
-            f_pred = f(t_new, w_pred)
-            
-            # Corrector (AM3)
-            w_corr = y_vals[-1] + (h/24) * (
-                9 * f_pred + 19 * f_vals[-1] - 5 * f_vals[-2] + f_vals[-3]
-            )
-            
-            self.steps.append(f"  λ={n}: w*={w_pred:.6f}, w={w_corr:.6f}")
-            
-            t = t_new
-            t_vals.append(t)
-            y_vals.append(w_corr)
-            f_vals.append(f(t, w_corr))
-            n += 1
-        
-        self._add_results_table(t_vals, y_vals)
-        return np.array(t_vals), np.array(y_vals), self.steps
+    def adams_moulton(self, *args, **kwargs):
+        raise NotImplementedError(
+            "Adams–Moulton no se programa según las restricciones."
+        )
+

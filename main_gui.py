@@ -37,15 +37,15 @@ class AplicacionMetodosNumericos:
         self.notebook = ttk.Notebook(root)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
+        self.crear_pestana_raices()
+        self.crear_pestana_derivacion()
+        self.crear_pestana_integracion()
+        self.crear_pestana_interpolacion()
         self.crear_pestana_gauss()
         self.crear_pestana_factorizacion()
         self.crear_pestana_edo()
         self.crear_pestana_sistemas()
         self.crear_pestana_minimos_cuadrados()
-        self.crear_pestana_raices()
-        self.crear_pestana_derivacion()
-        self.crear_pestana_integracion()
-        self.crear_pestana_interpolacion()
     
     def crear_pestana_gauss(self):
         frame = ttk.Frame(self.notebook)
@@ -280,8 +280,15 @@ class AplicacionMetodosNumericos:
             setattr(self, f"edo_{txt.replace('₀','0').replace(':','').replace('_','')}", e)
         
         self.edo_metodo = tk.StringVar(value="rk4")
-        for txt, val in [("Euler", "euler"), ("RK2", "rk2"), ("RK4", "rk4"), ("RKF45", "rkf45")]:
+        for txt, val in [
+            ("Euler", "euler"),
+            ("RK2", "rk2"),
+            ("RK4", "rk4"),
+            ("RKF45", "rkf45"),
+            ("Adams–Bashforth (Orden 4)", "ab4"),
+        ]:
             tk.Radiobutton(panel_izq, text=txt, variable=self.edo_metodo, value=val).pack(anchor=tk.W)
+
         
         tk.Button(panel_izq, text="Resolver", bg='#FF9800', fg='white', command=self.resolver_edo).pack(pady=15)
         
@@ -306,8 +313,13 @@ class AplicacionMetodosNumericos:
             
             if metodo in ["euler", "rk2", "rk4"]:
                 t, y, pasos = getattr(self.ode_basic, metodo)(f, t0, y0, t_end, h)
-            else:
+            elif metodo == "rkf45":
                 t, y, pasos = self.ode_adv.rkf45(f, t0, y0, t_end, h)
+            elif metodo == "ab4":
+                t, y, pasos = self.ode_adv.adams_bashforth(f, t0, y0, t_end, h)
+            else:
+                raise ValueError("Método no reconocido.")
+
             
             self.resultado_edo.delete(1.0, tk.END)
             self.resultado_edo.insert(tk.END, "\n".join(pasos))
@@ -391,9 +403,9 @@ class AplicacionMetodosNumericos:
         panel_izq.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         
         self.tipo_mc = tk.StringVar(value="linear")
-        for txt, val in [("Lineal", "linear"), ("Exponencial", "exp"), ("Potencial", "power")]:
+        for txt, val in [("Lineal", "linear"), ("Exponencial", "exp"), ("Potencial", "power"), ("Polinomial", "poly")]:
             tk.Radiobutton(panel_izq, text=txt, variable=self.tipo_mc, value=val).pack(anchor=tk.W)
-        
+
         tk.Label(panel_izq, text="X:").pack(anchor=tk.W)
         self.mc_x = tk.Entry(panel_izq, width=30)
         self.mc_x.pack(fill=tk.X)
@@ -403,6 +415,11 @@ class AplicacionMetodosNumericos:
         self.mc_y = tk.Entry(panel_izq, width=30)
         self.mc_y.pack(fill=tk.X)
         self.mc_y.insert(0, "2.1, 3.9, 6.2, 7.8, 10.1")
+        
+        tk.Label(panel_izq, text="Grado (1–10):").pack(anchor=tk.W, pady=(8, 0))
+        self.mc_degree = tk.IntVar(value=2)
+        self.mc_degree_spin = tk.Spinbox(panel_izq, from_=1, to=10, textvariable=self.mc_degree, width=6)
+        self.mc_degree_spin.pack(anchor=tk.W)
         
         tk.Button(panel_izq, text="Calcular", bg='#4CAF50', fg='white', command=self.resolver_mc).pack(pady=15)
         
@@ -426,12 +443,24 @@ class AplicacionMetodosNumericos:
             if tipo == "linear":
                 a0, a1, r, pasos = self.least_sq.linear_fit(x, y)
                 y_fit = a0 + a1 * x
+
             elif tipo == "exp":
                 a, b, r, pasos = self.least_sq.exponential_fit(x, y)
                 y_fit = a * np.exp(b * x)
-            else:
+
+            elif tipo == "power":
                 a, b, r, pasos = self.least_sq.power_fit(x, y)
                 y_fit = a * x**b
+
+            elif tipo == "poly":
+                degree = int(self.mc_degree.get())
+                coefs, pasos = self.least_sq.polynomial_fit(x, y, degree)
+                # y_fit en los puntos x:
+                y_fit = sum(coefs[i] * x**i for i in range(len(coefs)))
+
+            else:
+                raise ValueError("Tipo de ajuste no reconocido.")
+
             
             self.resultado_mc.delete(1.0, tk.END)
             self.resultado_mc.insert(tk.END, "\n".join(pasos))
@@ -439,9 +468,15 @@ class AplicacionMetodosNumericos:
             self.ax_mc.clear()
             self.ax_mc.scatter(x, y, c='blue', s=50, label='Datos')
             x_plot = np.linspace(min(x), max(x), 100)
-            if tipo == "linear": y_plot = a0 + a1 * x_plot
-            elif tipo == "exp": y_plot = a * np.exp(b * x_plot)
-            else: y_plot = a * x_plot**b
+            if tipo == "linear":
+                y_plot = a0 + a1 * x_plot
+            elif tipo == "exp":
+                y_plot = a * np.exp(b * x_plot)
+            elif tipo == "power":
+                y_plot = a * x_plot**b
+            elif tipo == "poly":
+                y_plot = sum(coefs[i] * x_plot**i for i in range(len(coefs)))
+
             self.ax_mc.plot(x_plot, y_plot, 'r-', linewidth=2, label='Ajuste')
             self.ax_mc.legend()
             self.ax_mc.grid(True, alpha=0.3)

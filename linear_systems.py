@@ -838,6 +838,11 @@ class LeastSquares:
         self.steps = []
         m = len(x)
         
+        if degree < 1:
+            raise ValueError("El grado debe ser >= 1.")
+        if degree > 10:
+            raise ValueError("El grado máximo permitido es 10 (restricción del curso).")
+        
         self.steps.append("=" * 60)
         self.steps.append(f"MÍNIMOS CUADRADOS - AJUSTE POLINOMIAL GRADO {degree}")
         self.steps.append(f"Modelo: y = a₀ + a₁x + a₂x² + ... + a_{degree}x^{degree}")
@@ -852,6 +857,21 @@ class LeastSquares:
             for j in range(n):
                 A[i, j] = np.sum(x**(i + j))
             b[i] = np.sum(y * x**i)
+        
+                # Mostrar sistema de ecuaciones normales
+        self.steps.append("=" * 60)
+        self.steps.append("Sistema de ecuaciones normales:")
+        self.steps.append(f"Matriz A ({A.shape[0]}x{A.shape[1]}):")
+
+        for row in A:
+            self.steps.append(
+                "  " + "  ".join(f"{val:12.6f}" for val in row)
+            )
+
+        self.steps.append("Vector b:")
+        self.steps.append(
+            "  " + "  ".join(f"{val:12.6f}" for val in b)
+        )
         
         self.steps.append("\nSistema de ecuaciones normales:")
         self.steps.append(f"Matriz A ({n}×{n}) y vector b:")
