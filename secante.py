@@ -255,14 +255,6 @@ class SecanteWindow(HoverButtonsMixin):
         self.proc_text.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
         self.proc_text.insert("1.0", "Aquí aparecerán los pasos del método.\n")
         self.proc_text.config(state="disabled")
-
-    
-    def setup_events(self):
-        """Configurar eventos"""
-        # Efecto hover para botones
-        for btn in [self.calc_btn, self.clear_btn, self.exit_btn]:
-            btn.bind("<Enter>", lambda e, b=btn: self.on_enter(e, b))
-            btn.bind("<Leave>", lambda e, b=btn: self.on_leave(e, b))
     
     def setup_events(self):
         self.bind_hover_buttons([self.calc_btn], normal_bg=self.btn_color, hover_bg=self.btn_hover)
